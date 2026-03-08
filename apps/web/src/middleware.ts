@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
+import { getSessionSecret } from './lib/session-secret';
 
 const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/health'];
 
@@ -32,7 +33,7 @@ export async function middleware(request: NextRequest) {
 
   // Verify JWT
   try {
-    const secret = new TextEncoder().encode(process.env.SESSION_SECRET ?? 'dev-secret-change-me');
+    const secret = getSessionSecret();
     await jwtVerify(sessionToken, secret);
     return NextResponse.next();
   } catch {

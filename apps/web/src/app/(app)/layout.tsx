@@ -1,13 +1,14 @@
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { Sidebar } from '../../components/Sidebar';
+import { getSessionSecret } from '../../lib/session-secret';
 
 async function getUser() {
   const cookieStore = await cookies();
   const token = cookieStore.get('prosaas_session')?.value;
   if (!token) return null;
   try {
-    const secret = new TextEncoder().encode(process.env.SESSION_SECRET ?? 'dev-secret-change-me');
+    const secret = getSessionSecret();
     const { payload } = await jwtVerify(token, secret);
     return { username: payload.username as string };
   } catch {

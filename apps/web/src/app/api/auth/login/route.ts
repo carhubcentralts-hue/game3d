@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'node:crypto';
 import { SignJWT } from 'jose';
+import { getSessionSecret } from '../../../../lib/session-secret';
 
 // Hardcoded credentials (in production, check against DB)
 const VALID_USERNAME = 'Prosaas';
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create JWT session
-    const secret = new TextEncoder().encode(process.env.SESSION_SECRET ?? 'dev-secret-change-me');
+    const secret = getSessionSecret();
     const token = await new SignJWT({ userId: 'user_1', username })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
