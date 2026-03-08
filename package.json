@@ -1,0 +1,31 @@
+{
+  "name": "prosaas-tools",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspaces --if-present",
+    "build:packages": "npm run build --workspace=packages/shared --workspace=packages/video-core --workspace=packages/prompt-engine --workspace=packages/video-templates",
+    "render-service": "npm run start --workspace=apps/render-service",
+    "render-service:build": "npm run build --workspace=apps/render-service",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npm run generate --workspace=packages/database",
+    "db:migrate": "npm run migrate --workspace=packages/database",
+    "db:seed": "npm run seed --workspace=packages/database",
+    "dev:all": "bash scripts/dev-all.sh",
+    "setup": "bash scripts/setup-dev.sh"
+  },
+  "overrides": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

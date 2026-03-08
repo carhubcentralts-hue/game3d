@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects     Project[]
+  assets       Asset[]
+  brandKits    BrandKit[]
+  activityLogs ActivityLog[]
+
+  @@map("workspaces")
+}
+
+model Tool {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String   @default("")
+  icon        String   @default("")
+  isEnabled   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projects Project[]
+
+  @@map("tools")
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  toolId       String
+  workspaceId  String
+  title        String
+  slug         String
+  description  String   @default("")
+  status       String   @default("draft")
+  metaJson     Json     @default("{}")
+  settingsJson Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tool      Tool       @relation(fields: [toolId], references: [id])
+  workspace Workspace  @relation(fields: [workspaceId], references: [id])
+  scenes    Scene[]
+  renderJobs RenderJob[]
+  promptSessions PromptSession[]
+
+  @@unique([workspaceId, slug])
+  @@map("projects")
+}
+
+model Scene {
+  id         String   @id @default(cuid())
+  projectId  String
+  orderIndex Int
+  type       String
+  dataJson   Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("scenes")
+}
+
+model Asset {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  type         String
+  filename     String
+  mimeType     String
+  storageKey   String
+  publicUrl    String   @default("")
+  metadataJson Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id])
+  renderOutputs RenderOutput[]
+  brandKitLogoLight BrandKit[] @relation("logoLight")
+  brandKitLogoDark  BrandKit[] @relation("logoDark")
+
+  @@map("assets")
+}
+
+model BrandKit {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  name             String
+  logoLightAssetId String?
+  logoDarkAssetId  String?
+  settingsJson     Json     @default("{}")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  logoLight Asset?    @relation("logoLight", fields: [logoLightAssetId], references: [id])
+  logoDark  Asset?    @relation("logoDark", fields: [logoDarkAssetId], references: [id])
+
+  @@map("brand_kits")
+}
+
+model RenderJob {
+  id          String    @id @default(cuid())
+  projectId   String
+  status      String    @default("pending")
+  progress    Int       @default(0)
+  logsJson    Json      @default("[]")
+  startedAt   DateTime?
+  completedAt DateTime?
+  failedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project Project       @relation(fields: [projectId], references: [id])
+  outputs RenderOutput[]
+
+  @@map("render_jobs")
+}
+
+model RenderOutput {
+  id          String   @id @default(cuid())
+  renderJobId String
+  assetId     String
+  format      String
+  width       Int
+  height      Int
+  fps         Int
+  duration    Float
+  createdAt   DateTime @default(now())
+
+  renderJob RenderJob @relation(fields: [renderJobId], references: [id])
+  asset     Asset     @relation(fields: [assetId], references: [id])
+
+  @@map("render_outputs")
+}
+
+model PromptSession {
+  id           String   @id @default(cuid())
+  projectId    String
+  inputPrompt  String
+  controlsJson Json     @default("{}")
+  outputJson   Json     @default("{}")
+  createdAt    DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@map("prompt_sessions")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  entityType  String
+  entityId    String
+  action      String
+  payloadJson Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@map("activity_logs")
+}
