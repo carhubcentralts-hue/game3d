@@ -1,0 +1,25 @@
+{
+  "name": "video-studio",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspaces --if-present",
+    "build:packages": "npm run build --workspace=packages/shared --workspace=packages/video-core --workspace=packages/prompt-engine --workspace=packages/video-templates",
+    "render-service": "npm run start --workspace=apps/render-service",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "overrides": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
