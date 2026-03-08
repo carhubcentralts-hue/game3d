@@ -35,10 +35,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         </div>
         <div className="flex gap-3">
           <button className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700">
-            Preview
+            תצוגה מקדימה
           </button>
           <button className="rounded-lg bg-indigo-600 px-5 py-2 font-medium text-white hover:bg-indigo-700">
-            🎬 Render MP4
+            🎬 רנדר MP4
           </button>
         </div>
       </div>
