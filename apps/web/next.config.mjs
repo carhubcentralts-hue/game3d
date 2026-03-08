@@ -5,6 +5,7 @@ const nextConfig = {
     '@video-studio/video-core',
     '@video-studio/prompt-engine',
   ],
+  serverExternalPackages: ['jose'],
 };
 
 export default nextConfig;
