@@ -1,57 +1,74 @@
-# 🎬 הכלים של פרוסאס
+# 🔧 ProSaaS Tools
 
-מערכת פרטית ליצירת סרטונים ברמה גבוהה, מבוססת **Remotion**, עם ממשק וובי נוח בעברית.
-
----
-
-## 📖 איך זה עובד
-
-המערכת בנויה כ־**monorepo** (מאגר אחד עם כמה פרויקטים בתוכו) ומחולקת לשני חלקים עיקריים:
-
-### 1. ממשק המשתמש (`apps/web`) — פורט 3050
-אפליקציית **Next.js** שרצה בדפדפן ומכילה:
-- **דף ראשי (Dashboard)** — רשימת כל הפרויקטים עם סטטוס (טיוטה / מרנדר / הושלם / נכשל)
-- **יצירת פרויקט חדש** (`/new`) — מסך עם prompt builder שבו אפשר:
-  - להזין תיאור חופשי של הסרטון
-  - לבחור מטרה (פרסומת, UGC, הסבר, Reel, מבצע...)
-  - לבחור פלטפורמה (TikTok, Instagram Reels, YouTube, Facebook...)
-  - לבחור סגנון ויזואלי, טון דיבור, עוצמת אנימציה
-  - להגדיר משך ומספר סצנות
-- **עורך סצנות** (`/project/[id]`) — צפייה ועריכה של כל הסצנות בפרויקט עם Timeline ויזואלי
-
-### 2. שירות רינדור (`apps/render-service`) — פורט 4010
-שרת **Node.js** מקומי שמקבל פרויקט ומרנדר אותו לקובץ MP4:
-- **`POST /render`** — שולחים JSON של פרויקט → מקבלים קובץ וידאו
-- **`GET /health`** — בדיקת תקינות השירות
-
-### 3. חבילות הליבה (`packages/`)
-
-| חבילה | מה היא עושה |
-|---|---|
-| **shared** | קבועים משותפים — יחסי גובה-רוחב, פלטפורמות, סוגי סצנות, סגנונות, FPS |
-| **video-core** | סכמות Zod לפרויקטים, סצנות, Brand Kit, הגדרות רינדור + פונקציות עזר (timeline, המרת שניות↔פריימים) |
-| **prompt-engine** | מנוע שממיר טקסט חופשי → מערך סצנות מובנה לפי מטרת הסרטון |
-| **video-templates** | קומפוננטות Remotion לסצנות (HeroIntro, BigHeadline, FeatureGrid, KpiCards, SocialProof, CtaOutro ועוד) עם אנימציות spring/interpolate |
-| **ui** | רכיבי ממשק משותפים (Button) |
-
-### הזרימה המלאה
-```
-פרומפט → prompt-engine → סצנות מובנות (Zod) → video-templates (Remotion) → render-service → MP4
-```
+פלטפורמת כלים פנימית פרטית — הכלי הראשון: **Video Studio** מבוסס Remotion.
 
 ---
 
-## 🚀 איך מתחילים
+## 📖 סקירה כללית
 
-### דרישות מקדימות
-- **Node.js** גרסה 18 ומעלה
-- **npm** (מגיע עם Node.js)
-- **ffmpeg** (נדרש לרינדור וידאו בפועל — `brew install ffmpeg` במק)
+**ProSaaS Tools** היא פלטפורמה פנימית שנבנתה כ-monorepo מודולרי. המערכת כוללת:
+- 🔐 **התחברות מאובטחת** — JWT session עם httpOnly cookies
+- 🏠 **דשבורד ראשי** — ניהול כלים ופרויקטים
+- 🎬 **Video Studio** — יצירת סרטוני שיווק עם Remotion
+- 🧰 **Tool Registry** — מערכת הרחבה לכלים נוספים בעתיד
+- 📦 **Storage Abstraction** — Local / Cloudflare R2
+- 🗄️ **Database Ready** — Prisma + Postgres schema
 
-### שלב 1 — שכפול והתקנת תלויות
+---
+
+## 🏗️ ארכיטקטורה
+
+```
+ProSaaS Tools
+├── apps/web              → Next.js App (Port 3050)
+│   ├── /login            → מסך התחברות
+│   ├── /dashboard        → דשבורד ראשי
+│   ├── /tools            → רשימת כלים
+│   └── /tools/video-studio → Video Studio (projects, editor, render)
+│
+├── apps/render-service   → שירות רינדור (Port 4010)
+│   ├── POST /render      → התחלת render job
+│   ├── GET /render/:id   → סטטוס job
+│   ├── GET /render/:id/logs → לוגים
+│   └── GET /health       → health check
+│
+├── packages/database     → Prisma schema + repositories
+├── packages/auth         → JWT session + password hashing
+├── packages/storage      → Storage abstraction (Local / R2)
+├── packages/shared       → קבועים וטיפוסים
+├── packages/video-core   → Zod schemas + timeline helpers
+├── packages/prompt-engine → prompt → structured scenes
+├── packages/video-templates → Remotion scene components
+└── packages/ui           → shared UI components
+```
+
+### זרימת הרינדור (Local → Remote Ready)
+
+```
+User → Web App → API /render → Render Service (HTTP) → Remotion → MP4
+                                    ↑
+                          localhost:4010 (local)
+                          OR
+                          https://render.example.com (remote - future)
+```
+
+**כרגע:** הרינדור רץ מקומית על המחשב שלך.
+**בעתיד:** פשוט משנים `RENDER_SERVICE_URL` ב-env ומצביעים לשרת חיצוני.
+
+---
+
+## 🚀 התחלה מהירה
+
+### דרישות
+- **Node.js 18+**
+- **npm**
+- **ffmpeg** (לרינדור וידאו — `brew install ffmpeg` במק)
+
+### שלב 1 — שכפול והתקנה
 ```bash
 git clone https://github.com/carhubcentralts-hue/game3d.git
 cd game3d
+cp .env.example .env
 npm install
 ```
 
@@ -59,97 +76,202 @@ npm install
 ```bash
 npm run build
 ```
-זה בונה את כל החבילות + אפליקציית הווב + שירות הרינדור.
 
-### שלב 3 — הפעלת ממשק המשתמש
+### שלב 3 — הפעלה
 ```bash
+# טרמינל 1 — ממשק הווב
 npm run dev
-```
-פותחים בדפדפן: **http://localhost:3050**
 
-### שלב 4 — הפעלת שירות הרינדור (בטרמינל נפרד)
-```bash
+# טרמינל 2 — שירות רינדור
 npm run render-service
 ```
-השירות מאזין ב: **http://localhost:4010**
 
----
-
-## 📂 מבנה הפרויקט
-
-```
-הכלים-של-פרוסאס/
-├── apps/
-│   ├── web/                    # ממשק Next.js — פורט 3050
-│   │   └── src/app/
-│   │       ├── page.tsx        # דף ראשי (Dashboard)
-│   │       ├── new/page.tsx    # יצירת פרויקט + Prompt Builder
-│   │       └── project/[id]/   # עורך סצנות + Timeline
-│   └── render-service/         # שירות רינדור — פורט 4010
-│       └── src/
-│           ├── index.ts        # שרת HTTP (POST /render, GET /health)
-│           ├── renderer.ts     # לוגיקת רינדור (Remotion renderMedia)
-│           └── logger.ts       # לוגים עם pino
-├── packages/
-│   ├── shared/                 # קבועים וטיפוסים משותפים
-│   ├── video-core/             # סכמות Zod + timeline helpers
-│   ├── prompt-engine/          # prompt → structured scenes
-│   ├── video-templates/        # קומפוננטות Remotion לסצנות
-│   └── ui/                     # רכיבי ממשק משותפים
-├── storage/
-│   ├── projects/               # שמירת פרויקטים
-│   ├── assets/                 # קבצי מדיה
-│   ├── renders/                # קובצי MP4 מרונדרים
-│   └── temp/                   # קבצים זמניים
-├── package.json                # הגדרות monorepo
-└── tsconfig.base.json          # הגדרות TypeScript בסיסיות
+**או הכול ביחד:**
+```bash
+npm run dev:all
 ```
 
----
+### שלב 4 — התחברות
+פתח: **http://localhost:3050**
 
-## 🛠️ פקודות זמינות
-
-| פקודה | מה היא עושה |
+| שדה | ערך |
 |---|---|
-| `npm run dev` | מפעיל את ממשק הווב בפיתוח (פורט 3050) |
-| `npm run build` | בונה את כל החבילות והאפליקציות |
-| `npm run build:packages` | בונה רק את החבילות (בלי האפליקציות) |
-| `npm run render-service` | מפעיל את שירות הרינדור (פורט 4010) |
-| `npm run typecheck` | בודק טיפוסי TypeScript בכל החבילות |
-| `npm run lint` | מריץ linting |
-| `npm run test` | מריץ טסטים |
+| שם משתמש | `Prosaas` |
+| סיסמה | `Sd@090702` |
 
 ---
 
-## 🎨 סוגי סצנות נתמכים
+## 🔐 Authentication
 
-המערכת תומכת ב-15 סוגי סצנות:
-
-1. 🎬 **Hero Intro** — פתיחה דרמטית
-2. 📝 **Big Headline** — טקסט קינטי גדול
-3. 📐 **Split Layout** — טקסט + תמונה
-4. 🖼️ **Fullscreen Image** — תמונה במסך מלא
-5. ↔️ **Before/After** — לפני/אחרי
-6. ⭐ **Social Proof** — המלצות
-7. 📊 **KPI Cards** — מדדים ונתונים
-8. 📋 **Timeline Steps** — שלבי תהליך
-9. ⚡ **Feature Grid** — רשת תכונות
-10. 💡 **Problem/Solution** — בעיה ופתרון
-11. 🏷️ **Offer/Discount** — מבצע
-12. 🔔 **CTA Outro** — סיום עם קריאה לפעולה
-13. 📱 **Mockup Showcase** — תצוגת מוצר
-14. 🏢 **Logo Wall** — קיר לוגואים
-15. ❓ **FAQ/Objection** — שאלות נפוצות
+- מסך התחברות ב-`/login`
+- JWT session ב-httpOnly cookie (7 ימים)
+- כל ה-routes מוגנים ב-middleware
+- Logout מוחק את ה-session
+- API routes:
+  - `POST /api/auth/login`
+  - `POST /api/auth/logout`
+  - `GET /api/auth/me`
+  - `GET /api/health`
 
 ---
 
-## 🔧 טכנולוגיות
+## 🗄️ Database (Postgres)
+
+Schema מוכן עם Prisma. Models:
+
+| Model | תיאור |
+|---|---|
+| User | משתמשים |
+| Workspace | סביבות עבודה |
+| Tool | כלים (Video Studio וכו') |
+| Project | פרויקטים |
+| Scene | סצנות |
+| Asset | קבצי מדיה |
+| BrandKit | ערכת מיתוג |
+| RenderJob | עבודות רינדור |
+| RenderOutput | פלטי רינדור |
+| PromptSession | הפקות מפרומפט |
+| ActivityLog | לוג פעילות |
+
+### הפעלת DB (כשיש Postgres)
+```bash
+npm run db:generate   # Generate Prisma client
+npm run db:migrate    # Run migrations
+npm run db:seed       # Seed default data
+```
+
+---
+
+## ☁️ Storage (R2 / Local)
+
+Storage abstraction עם שני drivers:
+- **LocalDriver** — שמירה מקומית (ברירת מחדל לפיתוח)
+- **R2Driver** — Cloudflare R2 (production)
+
+להפעלת R2, הוסף ל-.env:
+```
+R2_ACCOUNT_ID=your_account_id
+R2_ACCESS_KEY_ID=your_key
+R2_SECRET_ACCESS_KEY=your_secret
+R2_BUCKET=your_bucket
+R2_PUBLIC_URL=https://your-bucket.r2.dev
+```
+
+---
+
+## 🎬 Render Service
+
+שירות רינדור מקומי שמשתמש ב-Remotion:
+
+- **POST /render** — מתחיל render job, מחזיר jobId מיידית
+- **GET /render/:jobId** — סטטוס (pending → bundling → rendering → complete/failed)
+- **GET /render/:jobId/logs** — לוגי הרינדור
+- **GET /jobs** — רשימת כל העבודות
+- **GET /health** — בריאות השירות
+
+### הזרימה:
+1. Web app שולח project → `POST /render`
+2. Render service עושה bundle ל-Remotion composition
+3. `selectComposition()` עם project data
+4. `renderMedia()` יוצר MP4
+5. מחזיר נתיב הקובץ
+
+### Local vs Remote:
+```env
+# מקומי (ברירת מחדל)
+RENDER_SERVICE_URL=http://localhost:4010
+
+# שרת חיצוני (עתיד)
+RENDER_SERVICE_URL=https://render.prosaas.example.com
+```
+
+---
+
+## 📂 מבנה מלא
+
+```
+prosaas-tools/
+├── apps/
+│   ├── web/                         # Next.js frontend
+│   │   └── src/
+│   │       ├── app/
+│   │       │   ├── login/           # מסך התחברות
+│   │       │   ├── (app)/           # protected routes
+│   │       │   │   ├── dashboard/   # דשבורד
+│   │       │   │   ├── tools/       # רשימת כלים
+│   │       │   │   │   └── video-studio/  # Video Studio
+│   │       │   │   └── settings/    # הגדרות
+│   │       │   └── api/             # API routes
+│   │       ├── components/          # Sidebar, etc.
+│   │       ├── lib/                 # render-client
+│   │       └── middleware.ts        # auth middleware
+│   └── render-service/              # Render HTTP server
+│       └── src/
+│           ├── index.ts             # HTTP endpoints + job management
+│           ├── renderer.ts          # Remotion rendering
+│           ├── remotion-entry.tsx    # Composition entry point
+│           └── logger.ts            # Pino logger
+├── packages/
+│   ├── database/                    # Prisma + repositories
+│   ├── auth/                        # JWT + password hashing
+│   ├── storage/                     # Local/R2 storage abstraction
+│   ├── shared/                      # Constants & types
+│   ├── video-core/                  # Zod schemas + helpers
+│   ├── prompt-engine/               # prompt → scenes
+│   ├── video-templates/             # Remotion components
+│   └── ui/                          # Shared UI
+├── storage/                         # Local file storage
+├── scripts/                         # Setup & dev scripts
+├── .env.example                     # Environment template
+└── package.json                     # Monorepo config
+```
+
+---
+
+## 🛠️ פקודות
+
+| פקודה | תיאור |
+|---|---|
+| `npm run dev` | Web app בפיתוח (3050) |
+| `npm run build` | בנייה מלאה |
+| `npm run render-service` | שירות רינדור (4010) |
+| `npm run dev:all` | הכול ביחד |
+| `npm run setup` | Setup אוטומטי |
+| `npm run typecheck` | בדיקת TypeScript |
+| `npm run db:generate` | Generate Prisma client |
+| `npm run db:migrate` | Run migrations |
+| `npm run db:seed` | Seed data |
+
+---
+
+## 🎨 סוגי סצנות
+
+15 סוגי סצנות: Hero Intro, Big Headline, Split Layout, Fullscreen Image, Before/After, Social Proof, KPI Cards, Timeline Steps, Feature Grid, Problem/Solution, Offer/Discount, CTA Outro, Mockup Showcase, Logo Wall, FAQ/Objection.
+
+---
+
+## 🔧 Stack
 
 - **Next.js 15** — App Router, SSR, RTL
-- **TypeScript** — טיפוסים חזקים בכל מקום
-- **Tailwind CSS** — עיצוב מהיר
-- **Remotion** — Composition, Sequence, interpolate, spring
-- **Zod** — ולידציה של סכמות פרויקט וסצנות
-- **Zustand** — ניהול state
-- **Pino** — לוגים בשירות הרינדור
-- **npm workspaces** — ניהול monorepo
+- **TypeScript** — Typed everywhere
+- **Tailwind CSS** — Premium dark UI
+- **Remotion 4** — Video rendering
+- **Prisma** — Database ORM (Postgres)
+- **jose** — JWT sessions
+- **Zod** — Schema validation
+- **Zustand** — State management
+- **Pino** — Logging
+- **@aws-sdk/client-s3** — R2/S3 storage
+- **npm workspaces** — Monorepo
+
+---
+
+## 🔮 עתיד
+
+המערכת מוכנה להרחבה:
+- 👥 Multiple users & workspaces
+- 🧰 Tool plugins (Prompt Tools, Campaign Manager, Landing Pages)
+- ☁️ Remote render server
+- 🗄️ Full Postgres persistence
+- ☁️ Cloudflare R2 storage
+- 🤖 AI generation integrations

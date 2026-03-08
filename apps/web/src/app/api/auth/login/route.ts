@@ -1,24 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { SignJWT } from 'jose';
 import { getSessionSecret } from '../../../../lib/session-secret';
 
-// Hardcoded credentials (in production, check against DB)
-const VALID_USERNAME = 'Prosaas';
-const VALID_PASSWORD_HASH = createHash('sha256').update('Sd@090702').digest('hex');
-
-function hashPassword(password: string): string {
-  return createHash('sha256').update(password).digest('hex');
-}
+// In production, validate against DB via UserRepository.
+// For now, credentials are checked against a server-side hash.
+const VALID_USERNAME = process.env.AUTH_USERNAME ?? 'Prosaas';
+const VALID_PASSWORD_HASH = process.env.AUTH_PASSWORD_HASH
+  ?? createHash('sha256').update('Sd@090702').digest('hex');
 
 function verifyPassword(password: string, hash: string): boolean {
-  const passwordHash = hashPassword(password);
-  if (passwordHash.length !== hash.length) return false;
-  let result = 0;
-  for (let i = 0; i < passwordHash.length; i++) {
-    result |= passwordHash.charCodeAt(i) ^ hash.charCodeAt(i);
+  const passwordHash = createHash('sha256').update(password).digest('hex');
+  try {
+    return timingSafeEqual(Buffer.from(passwordHash, 'hex'), Buffer.from(hash, 'hex'));
+  } catch {
+    return false;
   }
-  return result === 0;
 }
 
 export async function POST(request: NextRequest) {
